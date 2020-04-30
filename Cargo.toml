@@ -1,0 +1,11 @@
+[package]
+name = "ampmeter-rs"
+version = "0.1.0"
+authors = ["Johannes Mueller <github@johannes-mueller.org>"]
+edition = "2018"
+
+[lib]
+crate-type = ["dylib"]
+
+[dependencies]
+lv2 = "0.5.1"
