@@ -7,6 +7,8 @@ use lv2::prelude::*;
 struct Ports {
     gain: InputPort<Control>,
     enabled: InputPort<Control>,
+    input_level: OutputPort<Control>,
+    output_level: OutputPort<Control>,
     input: InputPort<Audio>,
     output: OutputPort<Audio>,
 }
@@ -98,9 +100,30 @@ impl Plugin for Amp {
             0.0
         };
 
+	let mut out_lvl = 0.0_f32;
+	let mut in_lvl = 0.0_f32;
         for (in_frame, out_frame) in Iterator::zip(ports.input.iter(), ports.output.iter_mut()) {
             *out_frame = in_frame * coef;
+	    let abs_lvl = (*out_frame).abs();
+	    if abs_lvl > out_lvl {
+		out_lvl = abs_lvl;
+	    }
+	    let abs_lvl = (in_frame).abs();
+	    if abs_lvl > in_lvl {
+		in_lvl = abs_lvl;
+	    }
         }
+
+	**(ports.output_level) = if out_lvl > 1e-8 {
+	    20.0_f32 * out_lvl.log10()
+	} else {
+	    -160_f32
+	};
+	**(ports.input_level) = if in_lvl > 1e-8 {
+	    20.0_f32 * in_lvl.log10()
+	} else {
+	    -160_f32
+	};
     }
 }
 
