@@ -7,7 +7,7 @@ use urid::*;
 // The input and output ports are defined by a struct which implements the `PortCollection` trait.
 // In this case, there is an input control port for the gain of the amplification, an input audio
 // port and an output audio port.
-//#[derive(PortCollection)]
+#[derive(PortCollection)]
 struct Ports {
     gain: InputPort<Control>,
     enabled: InputPort<Control>,
@@ -19,105 +19,6 @@ struct Ports {
     output: OutputPort<Audio>,
 }
 
-struct MyPortsPointerCache {
-    gain: *mut std::ffi::c_void,
-    enabled: *mut std::ffi::c_void,
-    input_level: *mut std::ffi::c_void,
-    output_level: *mut std::ffi::c_void,
-    control: *mut std::ffi::c_void,
-    notify: *mut std::ffi::c_void,
-    input: *mut std::ffi::c_void,
-    output: *mut std::ffi::c_void
-}
-impl Default for MyPortsPointerCache {
-    fn default() -> Self {
-        Self {
-            gain: std::ptr::null_mut(),
-            enabled: std::ptr::null_mut(),
-            input_level: std::ptr::null_mut(),
-            output_level: std::ptr::null_mut(),
-            control: std::ptr::null_mut(),
-            notify: std::ptr::null_mut(),
-            input: std::ptr::null_mut(),
-            output: std::ptr::null_mut()
-        }
-    }
-}
-impl PortPointerCache for MyPortsPointerCache {
-    fn connect(&mut self, index: u32, pointer: *mut std::ffi::c_void) {
-        match index {
-            0 => { self.gain = pointer },
-            1 => { self.enabled = pointer },
-            2 => { self.input_level = pointer },
-            3 => { self.output_level = pointer },
-            4 => { self.control = pointer },
-            5 => {
-                println!("notify port {:?}", pointer);
-                self.notify = pointer
-            },
-            6 => { self.input = pointer },
-            7 => { self.output = pointer }
-            _ => {}
-        };
-    }
-}
-impl PortCollection for Ports {
-    type Cache = MyPortsPointerCache;
-    unsafe fn from_connections(connections: &<Self as PortCollection>::Cache, sample_count: u32) -> Option<Self> {
-        Some(
-            Self {
-                gain: if let Some(conn) =  <InputPort<Control> as PortHandle>::from_raw(connections.gain, sample_count) {
-                    conn
-                } else {
-                    return None;
-                },
-                enabled: if let Some(conn) =  <InputPort<Control> as PortHandle>::from_raw(connections.enabled, sample_count) {
-                    conn
-                } else {
-                    return None;
-                },
-                input_level: if let Some(conn) =  <OutputPort<Control> as PortHandle>::from_raw(connections.input_level, sample_count) {
-                    conn
-                } else {
-                    return None;
-                },
-                output_level: if let Some(conn) =  <OutputPort<Control> as PortHandle>::from_raw(connections.output_level, sample_count) {
-                    conn
-                } else {
-                    return None;
-                },
-                control: if let Some(conn) =  <InputPort<AtomPort> as PortHandle>::from_raw(connections.control, sample_count) {
-                    conn
-                } else {
-                    return None;
-                },
-                notify: if let Some(conn) =  <OutputPort<AtomPort> as PortHandle>::from_raw(connections.notify, sample_count) {
-                    let buf: [u8; 64] = *(connections.notify as *const [u8; 64]);
-                    /*
-                    print!("{:?} [ ", connections.notify);
-                    for b in buf.iter() {
-                        print!("{} ", b)
-                    }
-                    println!("]");
-                    */
-                    conn
-                } else {
-                    return None;
-                },
-                input: if let Some(conn) =  <InputPort<Audio> as PortHandle>::from_raw(connections.input, sample_count) {
-                    conn
-                } else {
-                    return None;
-                },
-                output: if let Some(conn) =  <OutputPort<Audio> as PortHandle>::from_raw(connections.output, sample_count) {
-                    conn
-                } else {
-                    return None;
-                }
-            }
-        )
-    }
-}
 
 #[derive(FeatureCollection)]
 struct Features<'a> {
@@ -261,7 +162,6 @@ impl Plugin for Amp {
             self.ui_notified = true;
             //println!("{:?}", *ports.notify);
         }
-
     }
 }
 // The `lv2_descriptors` macro creates the entry point to the plugin library. It takes structs that implement `Plugin` and exposes them. The host will load the library and call a generated function to find all the plugins defined in the library.
